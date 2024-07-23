@@ -1,4 +1,4 @@
-package org.Bun.server;
+package org.Bun;
 
 import lombok.extern.slf4j.Slf4j;
 import org.Bun.entity.RpcRequest;

@@ -21,9 +21,9 @@ import java.util.concurrent.ConcurrentHashMap;
 public class DeaultServiceRegistry implements ServiceRegistry
 {
     //接口到服务的映射
-    private final Map<String,Object> serviceMap = new ConcurrentHashMap<>();//使用ConcurrentHashMap，保证线程安全
+    private static final Map<String,Object> serviceMap = new ConcurrentHashMap<>();//使用ConcurrentHashMap，保证线程安全
     //  创建一个Set，用于存储已注册的服务名称。
-    private final Set<String> registeredService = ConcurrentHashMap.newKeySet();//使用线程安全的set
+    private static final Set<String> registeredService = ConcurrentHashMap.newKeySet();//使用线程安全的set
 
     @Override
     public synchronized <T> void register(T service)

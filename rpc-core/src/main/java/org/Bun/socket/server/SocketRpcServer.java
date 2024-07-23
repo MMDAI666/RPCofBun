@@ -1,6 +1,8 @@
-package org.Bun.server;
+package org.Bun.socket.server;
 
 import lombok.extern.slf4j.Slf4j;
+import org.Bun.RequestHandler;
+import org.Bun.RpcServer;
 import org.Bun.registry.ServiceRegistry;
 
 import java.io.IOException;
@@ -9,12 +11,12 @@ import java.net.Socket;
 import java.util.concurrent.*;
 
 /**
- * server的启动程序
+ * Socket方式远程方法调用的提供者（服务端）
  * @author 萌萌哒AI
  * @date 2024/07/10
  */
 @Slf4j
-public class RpcServer
+public class SocketRpcServer implements RpcServer
 {
     private final ExecutorService threadPool;
     private static final int CORE_POOL_SIZE = 5;
@@ -25,7 +27,7 @@ public class RpcServer
     private RequestHandler requestHandler = new RequestHandler();
     private final ServiceRegistry serviceRegistry;
 
-    public RpcServer(ServiceRegistry serviceRegistry)
+    public SocketRpcServer(ServiceRegistry serviceRegistry)
     {
         this.serviceRegistry = serviceRegistry;
         BlockingQueue<Runnable> workingQueue = new ArrayBlockingQueue<>(BLOCKING_QUEUE_CAPACITY);
@@ -35,15 +37,20 @@ public class RpcServer
 
     }
 
-    public void start(Object service, int port) {
-        try (ServerSocket serverSocket = new ServerSocket(port)) {
+    @Override
+    public void start(int port)
+    {
+        try (ServerSocket serverSocket = new ServerSocket(port))
+        {
             log.info("服务器正在启动...");
             Socket socket;
-            while((socket = serverSocket.accept()) != null) {
+            while ((socket = serverSocket.accept()) != null)
+            {
                 log.info("消费者连接: {}:{}", socket.getInetAddress(), socket.getPort());
                 threadPool.execute(new RequestHandlerThread(socket, requestHandler, serviceRegistry));
             }
-        } catch (IOException e) {
+        } catch (IOException e)
+        {
             log.error("服务器启动时有错误发生:", e);
         }
     }

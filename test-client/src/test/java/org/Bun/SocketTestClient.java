@@ -1,12 +1,14 @@
 package org.Bun;
 
-import org.Bun.client.RpcClientProxy;
 import org.Bun.api.HelloServer;
 import org.Bun.domain.HelloObject;
+import org.Bun.socket.client.SocketRpcClient;
 
-public class TestClient {
+public class SocketTestClient {
     public static void main(String[] args) {
-        RpcClientProxy proxy = new RpcClientProxy("127.0.0.1", 9000);
+
+        RpcClient socketRpcClient=new SocketRpcClient("127.0.0.1", 9000);
+        RpcClientProxy proxy = new RpcClientProxy(socketRpcClient);
         HelloServer helloService = proxy.getProxy(HelloServer.class);
         HelloObject object = new HelloObject(1, "Hello,World!");
         String res = helloService.hello(object);

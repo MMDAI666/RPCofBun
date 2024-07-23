@@ -1,21 +1,21 @@
-package org.Bun.client;
+package org.Bun;
 
+import lombok.extern.slf4j.Slf4j;
 import org.Bun.entity.RpcRequest;
 import org.Bun.entity.RpcResponse;
+import org.Bun.socket.client.SocketRpcClient;
 
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 
+@Slf4j
 public class RpcClientProxy implements InvocationHandler
 {
-    private String host;
-    private int port;
+    private final RpcClient client;
 
-    public RpcClientProxy(String host, int port)
-    {
-        this.host = host;
-        this.port = port;
+    public RpcClientProxy(RpcClient client) {
+        this.client = client;
     }
 
     @SuppressWarnings("unchecked")
@@ -27,16 +27,14 @@ public class RpcClientProxy implements InvocationHandler
     @Override
     public Object invoke(Object proxy, Method method, Object[] args) throws Throwable
     {
-
+        log.info("调用方法: {}#{}", method.getDeclaringClass().getName(), method.getName());
         RpcRequest request = RpcRequest.builder()
                 .interfaceName(method.getDeclaringClass().getName())
                 .methodName(method.getName())
                 .parameters(args)
                 .parameterTypes(method.getParameterTypes())
                 .build();
-
-        RpcClient client = new RpcClient();
-        return ((RpcResponse) client.sendRequest(request, host, port)).getData();
+        return client.sendRequest(request);
 
     }
 
