@@ -9,8 +9,9 @@ import io.netty.handler.logging.LogLevel;
 import io.netty.handler.logging.LoggingHandler;
 import lombok.extern.slf4j.Slf4j;
 import org.Bun.RpcServer;
-import org.Bun.codeProcess.CommonDecoder;
-import org.Bun.codeProcess.CommonEncoder;
+import org.Bun.netty.serializer.JsonSerializer;
+import org.Bun.utils.CommonDecoder;
+import org.Bun.utils.CommonEncoder;
 
 
 /**
@@ -36,12 +37,13 @@ public class NettyRpcServer implements RpcServer
             serverBootstrap.group(bossGroup,workerGroup).channel(NioServerSocketChannel.class)
                     .handler(new LoggingHandler(LogLevel.INFO))//为 ServerBootstrap 设置一个日志处理器，用于记录服务器的日志信息，日志级别为 INFO。
                     .option(ChannelOption.SO_BACKLOG, 256)//设置服务器套接字的选项，SO_BACKLOG 指定了内核为此套接字排队的最大连接数。
-                    .option(ChannelOption.SO_KEEPALIVE, true)//设置 SO_KEEPALIVE 选项，启用 TCP 的 keep-alive 机制。
+                    .childOption(ChannelOption.SO_KEEPALIVE, true)//设置 SO_KEEPALIVE 选项，启用 TCP 的 keep-alive 机制。
                     .childOption(ChannelOption.TCP_NODELAY, true)//设置子通道的选项，TCP_NODELAY 禁用 Nagle 算法，减少延迟。
                     .childHandler(new ChannelInitializer<SocketChannel>() {
                         @Override
                         protected void initChannel(SocketChannel socketChannel) throws Exception
                         {
+                            //数据从外部传入时需要解码，而传出时需要编码
                             ChannelPipeline pipeline = socketChannel.pipeline();
                             pipeline.addLast(new CommonEncoder(new JsonSerializer()));
                             pipeline.addLast(new CommonDecoder());

@@ -2,19 +2,18 @@ package org.Bun;
 
 import org.Bun.api.HelloServer;
 import org.Bun.impl.HelloServerImpl;
+import org.Bun.netty.server.NettyRpcServer;
 import org.Bun.registry.DeaultServiceRegistry;
 import org.Bun.registry.ServiceRegistry;
-import org.Bun.socket.server.SocketRpcServer;
 
-public class SocketTestServer
+public class NettyTestServer
 {
     public static void main(String[] args)
     {
+        HelloServer helloServer= new HelloServerImpl();
         ServiceRegistry serviceRegistry=new DeaultServiceRegistry();
-        HelloServer helloServer = new HelloServerImpl();
         serviceRegistry.register(helloServer);
-        RpcServer rpcServer= new SocketRpcServer(serviceRegistry);
-        rpcServer.start(9000);
-
+        RpcServer server=new NettyRpcServer();
+        server.start(9999);
     }
 }

@@ -19,7 +19,6 @@ public class RequestHandler
     public Object handler(RpcRequest request,Object service)
     {
         Object result = null;
-
         try
         {
             result=invokeTargetMethod(request,service);
