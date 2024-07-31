@@ -53,6 +53,16 @@
         <artifactId>jackson-annotations</artifactId>
         <version>2.11.0</version>
         </dependency>
+        <!--kryo依赖        -->
+            <!--    Kryo 是一个快速高效的 Java 对象序列化框架，主要特点是高性能、高效和易用。
+            最重要的两个特点，一是基于字节的序列化，对空间利用率较高，在网络传输时可以减小体积；
+            二是序列化时记录属性对象的类型信息，这样在反序列化时就不会出现之前的问题了。    -->
+        <dependency>
+            <groupId>com.esotericsoftware</groupId>
+            <artifactId>kryo</artifactId>
+            <version>4.0.2</version>
+        </dependency>
+
     </dependencies>
 
 </project>

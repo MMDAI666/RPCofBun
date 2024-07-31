@@ -11,6 +11,7 @@ import org.Bun.RpcClient;
 import org.Bun.entity.RpcRequest;
 import org.Bun.entity.RpcResponse;
 import org.Bun.netty.serializer.JsonSerializer;
+import org.Bun.netty.serializer.KryoSerializer;
 import org.Bun.utils.CommonDecoder;
 import org.Bun.utils.CommonEncoder;
 
@@ -20,6 +21,7 @@ public class NettyRpcClient implements RpcClient
     private String host;
     private int port;
     private static final Bootstrap bootstrap;
+    private static final EventLoopGroup group;//这个引用必须保存,否则EventLoopGroup线程无法关闭,client无法结束
 
     public NettyRpcClient(String host, int port)
     {
@@ -31,7 +33,7 @@ public class NettyRpcClient implements RpcClient
     //注意这里的发送是非阻塞的，所以发送后会立刻返回，而无法得到结果。这里通过 AttributeKey 的方式阻塞获得返回结果：
     static {
         bootstrap = new Bootstrap();
-        EventLoopGroup group = new NioEventLoopGroup();
+        group = new NioEventLoopGroup();
         bootstrap.group(group)
                 .channel(NioSocketChannel.class)
                 .handler(new ChannelInitializer<SocketChannel>() {
@@ -73,6 +75,10 @@ public class NettyRpcClient implements RpcClient
         catch (Exception e)
         {
             log.error("发送消息时有错误发生: ", e);
+        }
+        finally
+        {
+            group.shutdownGracefully();
         }
         return null;
     }

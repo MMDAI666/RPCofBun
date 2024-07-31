@@ -16,6 +16,8 @@ public interface CommonSerializer
     //这个静态方法根据传入的代码 code 返回相应的 CommonSerializer 实现。如果代码是 1，则返回 JsonSerializer 的实例；否则返回 null。
     static CommonSerializer getByCode(int code) {
         switch (code) {
+            case 0:
+                return new KryoSerializer();
             case 1:
                 return new JsonSerializer();
             default:

@@ -10,6 +10,7 @@ import io.netty.handler.logging.LoggingHandler;
 import lombok.extern.slf4j.Slf4j;
 import org.Bun.RpcServer;
 import org.Bun.netty.serializer.JsonSerializer;
+import org.Bun.netty.serializer.KryoSerializer;
 import org.Bun.utils.CommonDecoder;
 import org.Bun.utils.CommonEncoder;
 
