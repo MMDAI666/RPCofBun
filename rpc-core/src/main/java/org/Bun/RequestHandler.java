@@ -4,6 +4,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.Bun.entity.RpcRequest;
 import org.Bun.entity.RpcResponse;
 import org.Bun.enums.ResponseCode;
+import org.Bun.provider.ServiceProvider;
+import org.Bun.provider.ServiceProviderImpl;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -16,9 +18,14 @@ import java.lang.reflect.Method;
 @Slf4j
 public class RequestHandler
 {
-    public Object handler(RpcRequest request,Object service)
+    private static final ServiceProvider serviceProvider;
+    static {
+        serviceProvider = new ServiceProviderImpl();
+    }
+    public Object handler(RpcRequest request)
     {
         Object result = null;
+        Object service = serviceProvider.getServiceProvider(request.getInterfaceName());
         try
         {
             result=invokeTargetMethod(request,service);

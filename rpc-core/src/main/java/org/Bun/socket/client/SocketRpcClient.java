@@ -8,11 +8,14 @@ import org.Bun.enums.ResponseCode;
 import org.Bun.enums.RpcError;
 import org.Bun.exception.RpcException;
 import org.Bun.netty.serializer.CommonSerializer;
+import org.Bun.register.NacosServiceRegistry;
+import org.Bun.register.ServiceRegistry;
 import org.Bun.socket.ObjectReader;
 import org.Bun.socket.ObjectWriter;
 import org.Bun.utils.RpcMessageChecker;
 
 import java.io.*;
+import java.net.InetSocketAddress;
 import java.net.Socket;
 
 /**
@@ -24,14 +27,12 @@ import java.net.Socket;
 @Slf4j
 public class SocketRpcClient implements RpcClient
 {
-    private final String host;
-    private final int port;
+    private final ServiceRegistry serviceRegistry;
     private CommonSerializer serializer;
 
-    public SocketRpcClient(String host, int port)
+    public SocketRpcClient()
     {
-        this.host = host;
-        this.port = port;
+        serviceRegistry=new NacosServiceRegistry();
     }
     @Override
     public void setSerializer(CommonSerializer serializer) {
@@ -47,8 +48,10 @@ public class SocketRpcClient implements RpcClient
             log.error("未设置序列化器");
             throw new RpcException(RpcError.SERIALIZER_NOT_FOUND);
         }
-        try (Socket socket = new Socket(host, port))
+        InetSocketAddress inetSocketAddress = serviceRegistry.lookupService(rpcRequest.getInterfaceName());
+        try (Socket socket = new Socket())
         {
+            socket.connect(inetSocketAddress);
             OutputStream outputStream = socket.getOutputStream();
             InputStream inputStream = socket.getInputStream();
             ObjectWriter.writeObject(outputStream, rpcRequest, serializer);

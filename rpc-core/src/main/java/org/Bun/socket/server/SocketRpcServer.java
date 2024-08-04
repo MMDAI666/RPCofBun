@@ -6,9 +6,14 @@ import org.Bun.RpcServer;
 import org.Bun.enums.RpcError;
 import org.Bun.exception.RpcException;
 import org.Bun.netty.serializer.CommonSerializer;
-import org.Bun.registry.ServiceRegistry;
+import org.Bun.provider.ServiceProvider;
+import org.Bun.provider.ServiceProviderImpl;
+import org.Bun.register.NacosServiceRegistry;
+import org.Bun.register.ServiceRegistry;
+import org.Bun.utils.ThreadPoolFactory;
 
 import java.io.IOException;
+import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.concurrent.*;
@@ -21,39 +26,42 @@ import java.util.concurrent.*;
 @Slf4j
 public class SocketRpcServer implements RpcServer
 {
-    private final ExecutorService threadPool;
-    private static final int CORE_POOL_SIZE = 5;
-    private static final int MAXIMUM_POOL_SIZE = 50;
-    private static final int KEEP_ALIVE_TIME = 60;
-    private static final int BLOCKING_QUEUE_CAPACITY = 100;
 
     private RequestHandler requestHandler = new RequestHandler();
-    private final ServiceRegistry serviceRegistry;
-
+    private final ExecutorService threadPool;;
+    private final String host;
+    private final int port;
     private CommonSerializer serializer;
+    private final ServiceRegistry serviceRegistry;
+    private final ServiceProvider serviceProvider;
+
+    public SocketRpcServer(String host, int port) {
+        this.host = host;
+        this.port = port;
+        threadPool = ThreadPoolFactory.createDefaultThreadPool("socket-rpc-server");
+        this.serviceRegistry = new NacosServiceRegistry();
+        this.serviceProvider = new ServiceProviderImpl();
+    }
 
     @Override
     public void setSerializer(CommonSerializer serializer) {
         this.serializer = serializer;
     }
 
-    public SocketRpcServer(ServiceRegistry serviceRegistry)
-    {
-        this.serviceRegistry = serviceRegistry;
-        BlockingQueue<Runnable> workingQueue = new ArrayBlockingQueue<>(BLOCKING_QUEUE_CAPACITY);
-
-        threadPool = new ThreadPoolExecutor(CORE_POOL_SIZE, MAXIMUM_POOL_SIZE, KEEP_ALIVE_TIME, TimeUnit.SECONDS,
-                workingQueue, Executors.defaultThreadFactory());
-
-    }
-
     @Override
-    public void start(int port)
+    public <T> void publishService(Object service, Class<T> serviceClass)
     {
         if(serializer == null) {
             log.error("未设置序列化器");
             throw new RpcException(RpcError.SERIALIZER_NOT_FOUND);
         }
+        serviceProvider.addServiceProvider(service);
+        serviceRegistry.register(serviceClass.getCanonicalName(), new InetSocketAddress(host, port));
+        start();
+    }
+    @Override
+    public void start()
+    {
         try (ServerSocket serverSocket = new ServerSocket(port))
         {
             log.info("服务器正在启动...");
@@ -61,7 +69,7 @@ public class SocketRpcServer implements RpcServer
             while ((socket = serverSocket.accept()) != null)
             {
                 log.info("消费者连接: {}:{}", socket.getInetAddress(), socket.getPort());
-                threadPool.execute(new RequestHandlerThread(socket, requestHandler, serviceRegistry,serializer));
+                threadPool.execute(new RequestHandlerThread(socket, requestHandler, serviceProvider,serializer));
             }
         } catch (IOException e)
         {

@@ -5,7 +5,7 @@ import org.Bun.RequestHandler;
 import org.Bun.entity.RpcRequest;
 import org.Bun.entity.RpcResponse;
 import org.Bun.netty.serializer.CommonSerializer;
-import org.Bun.registry.ServiceRegistry;
+import org.Bun.provider.ServiceProvider;
 import org.Bun.socket.ObjectReader;
 import org.Bun.socket.ObjectWriter;
 
@@ -23,14 +23,14 @@ public class RequestHandlerThread implements Runnable
 {
     private Socket socket;
     private RequestHandler requestHandler;
-    private ServiceRegistry serviceRegistry;
+    private ServiceProvider serviceProvider;
     private CommonSerializer serializer;
 
-    public RequestHandlerThread(Socket socket, RequestHandler requestHandler, ServiceRegistry serviceRegistry, CommonSerializer serializer)
+    public RequestHandlerThread(Socket socket, RequestHandler requestHandler, ServiceProvider serviceProvider, CommonSerializer serializer)
     {
         this.socket = socket;
         this.requestHandler = requestHandler;
-        this.serviceRegistry = serviceRegistry;
+        this.serviceProvider = serviceProvider;
         this.serializer = serializer;
     }
 
@@ -41,8 +41,7 @@ public class RequestHandlerThread implements Runnable
              OutputStream outputStream = socket.getOutputStream()) {
             RpcRequest rpcRequest = (RpcRequest) ObjectReader.readObject(inputStream);
             String interfaceName=rpcRequest.getInterfaceName();
-            Object service = serviceRegistry.getService(interfaceName);
-            Object result=requestHandler.handler(rpcRequest,service);
+            Object result=requestHandler.handler(rpcRequest);
             RpcResponse<Object> response = RpcResponse.success(result,rpcRequest.getRequestId());
             ObjectWriter.writeObject(outputStream, response, serializer);
 

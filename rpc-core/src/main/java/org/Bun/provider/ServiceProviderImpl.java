@@ -1,4 +1,4 @@
-package org.Bun.registry;
+package org.Bun.provider;
 
 import lombok.extern.slf4j.Slf4j;
 import org.Bun.enums.RpcError;
@@ -18,7 +18,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * @date 2024/07/09
  */
 @Slf4j
-public class DeaultServiceRegistry implements ServiceRegistry
+public class ServiceProviderImpl implements ServiceProvider
 {
     //接口到服务的映射
     private static final Map<String,Object> serviceMap = new ConcurrentHashMap<>();//使用ConcurrentHashMap，保证线程安全
@@ -26,7 +26,7 @@ public class DeaultServiceRegistry implements ServiceRegistry
     private static final Set<String> registeredService = ConcurrentHashMap.newKeySet();//使用线程安全的set
 
     @Override
-    public synchronized <T> void register(T service)
+    public synchronized <T> void addServiceProvider(T service)
     {
         String serviceName = service.getClass().getCanonicalName();
         if(registeredService.contains(serviceName))return;
@@ -43,7 +43,7 @@ public class DeaultServiceRegistry implements ServiceRegistry
     }
 
     @Override
-    public Object getService(String serviceName)
+    public Object getServiceProvider(String serviceName)
     {
         Object service = serviceMap.get(serviceName);
         if (service == null) {

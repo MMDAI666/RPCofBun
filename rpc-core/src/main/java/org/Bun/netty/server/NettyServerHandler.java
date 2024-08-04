@@ -9,8 +9,11 @@ import lombok.extern.slf4j.Slf4j;
 import org.Bun.RequestHandler;
 import org.Bun.entity.RpcRequest;
 import org.Bun.entity.RpcResponse;
-import org.Bun.registry.DeaultServiceRegistry;
-import org.Bun.registry.ServiceRegistry;
+import org.Bun.provider.ServiceProviderImpl;
+import org.Bun.provider.ServiceProvider;
+import org.Bun.utils.ThreadPoolFactory;
+
+import java.util.concurrent.ExecutorService;
 
 /**
  * Netty中处理RpcRequest的Handler
@@ -22,31 +25,34 @@ import org.Bun.registry.ServiceRegistry;
 public class NettyServerHandler extends SimpleChannelInboundHandler<RpcRequest>
 {
     private static RequestHandler requestHandler;
-    private static ServiceRegistry serviceRegistry;
+    private static final String THREAD_NAME_PREFIX = "netty-server-handler";
+    private static final ExecutorService threadPool;
 
     static
     {
         requestHandler = new RequestHandler();
-        serviceRegistry=new DeaultServiceRegistry();
+
+        threadPool = ThreadPoolFactory.createDefaultThreadPool(THREAD_NAME_PREFIX);
     }
 
     @Override
     protected void channelRead0(ChannelHandlerContext channelHandlerContext, RpcRequest msg) throws Exception
     {
-        try
+        threadPool.execute(() ->
         {
-            log.info("服务器接收到请求: {}", msg);
-            String interfaceName = msg.getInterfaceName();
-            Object service = serviceRegistry.getService(interfaceName);
-            Object result = requestHandler.handler(msg, service);
-            //将返回结果放入channelHandlerContext中
-            ChannelFuture future = channelHandlerContext.writeAndFlush(RpcResponse.success(result, msg.getRequestId()));
-            future.addListener(ChannelFutureListener.CLOSE);
-        }
-        finally
-        {
-            ReferenceCountUtil.release(msg);
-        }
+            try
+            {
+                log.info("服务器接收到请求: {}", msg);
+                String interfaceName = msg.getInterfaceName();
+                Object result = requestHandler.handler(msg);
+                //将返回结果放入channelHandlerContext中
+                ChannelFuture future = channelHandlerContext.writeAndFlush(RpcResponse.success(result, msg.getRequestId()));
+                future.addListener(ChannelFutureListener.CLOSE);
+            } finally
+            {
+                ReferenceCountUtil.release(msg);
+            }
+        });
     }
 
     @Override

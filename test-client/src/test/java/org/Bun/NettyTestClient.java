@@ -9,12 +9,12 @@ public class NettyTestClient
 {
     public static void main(String[] args)
     {
-        RpcClient client=new NettyRpcClient("127.0.0.1",9999);
+        RpcClient client = new NettyRpcClient();
         client.setSerializer(new JsonSerializer());
-        RpcClientProxy proxy = new RpcClientProxy(client);
-        HelloServer helloServer=proxy.getProxy(HelloServer.class);
-        HelloObject helloObject=new HelloObject(12,"This is a Netty message");
-        String hello = helloServer.hello(helloObject);
-        System.out.println(hello);
+        RpcClientProxy rpcClientProxy = new RpcClientProxy(client);
+        HelloServer helloService = rpcClientProxy.getProxy(HelloServer.class);
+        HelloObject object = new HelloObject(12, "This is a message");
+        String res = helloService.hello(object);
+        System.out.println(res);
     }
 }

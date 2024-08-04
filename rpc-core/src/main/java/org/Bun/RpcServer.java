@@ -6,5 +6,7 @@ public interface RpcServer
 {
     void setSerializer(CommonSerializer serializer);
 
-    void start(int port);
+    void start();
+
+    <T> void publishService(Object service, Class<T> serviceClass);
 }

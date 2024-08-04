@@ -15,6 +15,8 @@ import org.Bun.exception.RpcException;
 import org.Bun.netty.serializer.CommonSerializer;
 import org.Bun.netty.serializer.JsonSerializer;
 import org.Bun.netty.serializer.KryoSerializer;
+import org.Bun.register.NacosServiceRegistry;
+import org.Bun.register.ServiceRegistry;
 import org.Bun.utils.CommonDecoder;
 import org.Bun.utils.CommonEncoder;
 import org.Bun.utils.RpcMessageChecker;
@@ -25,16 +27,15 @@ import java.util.concurrent.atomic.AtomicReference;
 @Slf4j
 public class NettyRpcClient implements RpcClient
 {
-    private String host;
-    private int port;
+    private final ServiceRegistry serviceRegistry;
+
     private CommonSerializer serializer;
     private static final Bootstrap bootstrap;
     private static final EventLoopGroup group;//这个引用必须保存,否则EventLoopGroup线程无法关闭,client无法结束
 
-    public NettyRpcClient(String host, int port)
+    public NettyRpcClient()
     {
-        this.host = host;
-        this.port = port;
+        serviceRegistry=new NacosServiceRegistry();
     }
 
     @Override
@@ -60,10 +61,14 @@ public class NettyRpcClient implements RpcClient
             log.error("未设置序列化器");
             throw new RpcException(RpcError.SERIALIZER_NOT_FOUND);
         }
+        //AtomicReference 提供了一种线程安全的方式来更新和读取引用类型的变量，避免了使用传统的同步机制（如 synchronized 块）所带来的复杂性和性能开销。
+        //Netty 的 ChannelFuture 和 AttributeKey 机制都是非阻塞的，这意味着在等待响应的过程中，可能会有多个线程同时访问和修改结果变量。
+        // 使用 AtomicReference 可以确保这些操作是线程安全的，并且结果的更新是可见的。
         AtomicReference<Object> result = new AtomicReference<>(null);
         try
         {
-            Channel channel = ChannelProvider.get(new InetSocketAddress(host, port), serializer);
+            InetSocketAddress inetSocketAddress = serviceRegistry.lookupService(rpcRequest.getInterfaceName());
+            Channel channel = ChannelProvider.get(inetSocketAddress, serializer);
             if(channel.isActive())
             {
                 channel.writeAndFlush(rpcRequest).addListener(future1 ->

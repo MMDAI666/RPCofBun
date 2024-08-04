@@ -14,8 +14,14 @@ import org.Bun.exception.RpcException;
 import org.Bun.netty.serializer.CommonSerializer;
 import org.Bun.netty.serializer.JsonSerializer;
 import org.Bun.netty.serializer.KryoSerializer;
+import org.Bun.provider.ServiceProvider;
+import org.Bun.provider.ServiceProviderImpl;
+import org.Bun.register.NacosServiceRegistry;
+import org.Bun.register.ServiceRegistry;
 import org.Bun.utils.CommonDecoder;
 import org.Bun.utils.CommonEncoder;
+
+import java.net.InetSocketAddress;
 
 
 /**
@@ -26,7 +32,19 @@ import org.Bun.utils.CommonEncoder;
 @Slf4j
 public class NettyRpcServer implements RpcServer
 {
+    private final String host;
+    private final int port;
+
+    private final ServiceRegistry serviceRegistry;
+    private final ServiceProvider serviceProvider;
     private CommonSerializer serializer;
+
+    public NettyRpcServer(String host, int port) {
+        this.host = host;
+        this.port = port;
+        serviceRegistry = new NacosServiceRegistry();
+        serviceProvider = new ServiceProviderImpl();
+    }
     @Override
     public void setSerializer(CommonSerializer serializer)
     {
@@ -34,12 +52,21 @@ public class NettyRpcServer implements RpcServer
     }
 
     @Override
-    public void start(int port)
+    public <T> void publishService(Object service, Class<T> serviceClass)
     {
-        if(serializer == null) {
+        if(serializer == null)
+        {
             log.error("未设置序列化器");
             throw new RpcException(RpcError.SERIALIZER_NOT_FOUND);
         }
+        serviceProvider.addServiceProvider(service);
+        serviceRegistry.register(serviceClass.getCanonicalName(),new InetSocketAddress(host, port));
+        start();
+    }
+
+    @Override
+    public void start()
+    {
         //bossGroup 和 workerGroup 是两个线程池, 它们默认线程数为 CPU 核心数乘以 2，
         // bossGroup 用于接收客户端传过来的请求，接收到请求后将后续操作交由 workerGroup 处理。
         EventLoopGroup bossGroup=new NioEventLoopGroup();
@@ -65,7 +92,7 @@ public class NettyRpcServer implements RpcServer
                             pipeline.addLast(new NettyServerHandler());
                         }
                     });
-            ChannelFuture future = serverBootstrap.bind(port).sync();//接着我们调用了 bootstrap 的 bind 方法将服务绑定到 port 端口上
+            ChannelFuture future = serverBootstrap.bind(host,port).sync();//接着我们调用了 bootstrap 的 bind 方法将服务绑定到 port 端口上
             future.channel().closeFuture().sync();//应用程序将会阻塞等待直到服务器的 Channel 关闭。
         }
         catch(Exception e){

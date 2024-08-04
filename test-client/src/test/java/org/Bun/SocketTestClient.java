@@ -8,7 +8,7 @@ import org.Bun.socket.client.SocketRpcClient;
 public class SocketTestClient {
     public static void main(String[] args) {
 
-        RpcClient socketRpcClient=new SocketRpcClient("127.0.0.1", 9000);
+        RpcClient socketRpcClient=new SocketRpcClient();
         socketRpcClient.setSerializer(new JsonSerializer());
         RpcClientProxy proxy = new RpcClientProxy(socketRpcClient);
         HelloServer helloService = proxy.getProxy(HelloServer.class);
