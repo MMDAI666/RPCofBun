@@ -1,7 +1,5 @@
 package org.Bun.netty.client;
 
-import io.netty.channel.ChannelFuture;
-import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.util.AttributeKey;
@@ -16,7 +14,7 @@ import org.Bun.entity.RpcResponse;
  * @date 2024/07/30
  */
 @Slf4j
-public class NettyClientrHandler extends SimpleChannelInboundHandler<RpcResponse>
+public class NettyClientHandler extends SimpleChannelInboundHandler<RpcResponse>
 {
     @Override
     protected void channelRead0(ChannelHandlerContext channelHandlerContext, RpcResponse msg) throws Exception
@@ -24,7 +22,7 @@ public class NettyClientrHandler extends SimpleChannelInboundHandler<RpcResponse
         try
         {
             log.info(String.format("客户端接收到消息: %s", msg));
-            AttributeKey<RpcResponse> key = AttributeKey.valueOf("rpcResponse");
+            AttributeKey<RpcResponse> key = AttributeKey.valueOf("rpcResponse" + msg.getRequestId());
             channelHandlerContext.attr(key).set(msg);
             channelHandlerContext.channel().close();
         }

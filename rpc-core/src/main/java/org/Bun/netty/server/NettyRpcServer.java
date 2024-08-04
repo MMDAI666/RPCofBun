@@ -9,6 +9,9 @@ import io.netty.handler.logging.LogLevel;
 import io.netty.handler.logging.LoggingHandler;
 import lombok.extern.slf4j.Slf4j;
 import org.Bun.RpcServer;
+import org.Bun.enums.RpcError;
+import org.Bun.exception.RpcException;
+import org.Bun.netty.serializer.CommonSerializer;
 import org.Bun.netty.serializer.JsonSerializer;
 import org.Bun.netty.serializer.KryoSerializer;
 import org.Bun.utils.CommonDecoder;
@@ -23,9 +26,20 @@ import org.Bun.utils.CommonEncoder;
 @Slf4j
 public class NettyRpcServer implements RpcServer
 {
+    private CommonSerializer serializer;
+    @Override
+    public void setSerializer(CommonSerializer serializer)
+    {
+        this.serializer = serializer;
+    }
+
     @Override
     public void start(int port)
     {
+        if(serializer == null) {
+            log.error("未设置序列化器");
+            throw new RpcException(RpcError.SERIALIZER_NOT_FOUND);
+        }
         //bossGroup 和 workerGroup 是两个线程池, 它们默认线程数为 CPU 核心数乘以 2，
         // bossGroup 用于接收客户端传过来的请求，接收到请求后将后续操作交由 workerGroup 处理。
         EventLoopGroup bossGroup=new NioEventLoopGroup();
@@ -46,7 +60,7 @@ public class NettyRpcServer implements RpcServer
                         {
                             //数据从外部传入时需要解码，而传出时需要编码
                             ChannelPipeline pipeline = socketChannel.pipeline();
-                            pipeline.addLast(new CommonEncoder(new JsonSerializer()));
+                            pipeline.addLast(new CommonEncoder(serializer));
                             pipeline.addLast(new CommonDecoder());
                             pipeline.addLast(new NettyServerHandler());
                         }

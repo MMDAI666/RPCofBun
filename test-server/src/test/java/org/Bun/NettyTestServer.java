@@ -2,6 +2,7 @@ package org.Bun;
 
 import org.Bun.api.HelloServer;
 import org.Bun.impl.HelloServerImpl;
+import org.Bun.netty.serializer.JsonSerializer;
 import org.Bun.netty.server.NettyRpcServer;
 import org.Bun.registry.DeaultServiceRegistry;
 import org.Bun.registry.ServiceRegistry;
@@ -14,6 +15,7 @@ public class NettyTestServer
         ServiceRegistry serviceRegistry=new DeaultServiceRegistry();
         serviceRegistry.register(helloServer);
         RpcServer server=new NettyRpcServer();
+        server.setSerializer(new JsonSerializer());
         server.start(9999);
     }
 }

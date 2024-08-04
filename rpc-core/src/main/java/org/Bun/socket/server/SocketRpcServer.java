@@ -3,6 +3,9 @@ package org.Bun.socket.server;
 import lombok.extern.slf4j.Slf4j;
 import org.Bun.RequestHandler;
 import org.Bun.RpcServer;
+import org.Bun.enums.RpcError;
+import org.Bun.exception.RpcException;
+import org.Bun.netty.serializer.CommonSerializer;
 import org.Bun.registry.ServiceRegistry;
 
 import java.io.IOException;
@@ -27,6 +30,13 @@ public class SocketRpcServer implements RpcServer
     private RequestHandler requestHandler = new RequestHandler();
     private final ServiceRegistry serviceRegistry;
 
+    private CommonSerializer serializer;
+
+    @Override
+    public void setSerializer(CommonSerializer serializer) {
+        this.serializer = serializer;
+    }
+
     public SocketRpcServer(ServiceRegistry serviceRegistry)
     {
         this.serviceRegistry = serviceRegistry;
@@ -40,6 +50,10 @@ public class SocketRpcServer implements RpcServer
     @Override
     public void start(int port)
     {
+        if(serializer == null) {
+            log.error("未设置序列化器");
+            throw new RpcException(RpcError.SERIALIZER_NOT_FOUND);
+        }
         try (ServerSocket serverSocket = new ServerSocket(port))
         {
             log.info("服务器正在启动...");
@@ -47,7 +61,7 @@ public class SocketRpcServer implements RpcServer
             while ((socket = serverSocket.accept()) != null)
             {
                 log.info("消费者连接: {}:{}", socket.getInetAddress(), socket.getPort());
-                threadPool.execute(new RequestHandlerThread(socket, requestHandler, serviceRegistry));
+                threadPool.execute(new RequestHandlerThread(socket, requestHandler, serviceRegistry,serializer));
             }
         } catch (IOException e)
         {

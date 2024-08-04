@@ -20,6 +20,10 @@ import java.io.Serializable;
 @AllArgsConstructor
 public class RpcRequest<T> implements Serializable
 {
+    /**
+     * 请求号
+     */
+    private String requestId;
     private String interfaceName;
     private String methodName;
     private Object[] parameters;//参数列表
