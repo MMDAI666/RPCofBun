@@ -14,7 +14,8 @@ import lombok.Getter;
 public enum RpcError
 {
 
-
+    CLIENT_CONNECT_SERVER_FAILURE("客户端连接服务端失败"),
+    
     SERVICE_INVOCATION_FAILURE("服务调用出现失败"),
     SERVICE_CAN_NOT_BE_NULL("注册的服务不得为空"),
     SERVICE_NOT_FOUND("找不到对应的服务"),
@@ -23,6 +24,7 @@ public enum RpcError
     UNKNOWN_PROTOCOL("不识别的协议包"),
     UNKNOWN_SERIALIZER("不识别的(反)序列化器"),
     UNKNOWN_PACKAGE_TYPE("不识别的数据包类型"),
+
     RESPONSE_NOT_MATCH("响应与请求号不匹配"),
     SERIALIZER_NOT_FOUND("找不到序列化器");
 

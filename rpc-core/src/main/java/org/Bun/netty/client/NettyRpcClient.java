@@ -19,6 +19,9 @@ import org.Bun.utils.CommonDecoder;
 import org.Bun.utils.CommonEncoder;
 import org.Bun.utils.RpcMessageChecker;
 
+import java.net.InetSocketAddress;
+import java.util.concurrent.atomic.AtomicReference;
+
 @Slf4j
 public class NettyRpcClient implements RpcClient
 {
@@ -57,25 +60,15 @@ public class NettyRpcClient implements RpcClient
             log.error("未设置序列化器");
             throw new RpcException(RpcError.SERIALIZER_NOT_FOUND);
         }
-        bootstrap.handler(new ChannelInitializer<SocketChannel>() {
-            @Override
-            protected void initChannel(SocketChannel ch) {
-                ChannelPipeline pipeline = ch.pipeline();
-                pipeline.addLast(new CommonDecoder())
-                        .addLast(new CommonEncoder(serializer))
-                        .addLast(new NettyClientHandler());
-            }
-        });
+        AtomicReference<Object> result = new AtomicReference<>(null);
         try
         {
-            ChannelFuture future=bootstrap.connect(host, port).sync();
-            log.info("客户端连接到服务器 {}:{}", host, port);
-            Channel channel = future.channel();
-            if (channel!=null)
+            Channel channel = ChannelProvider.get(new InetSocketAddress(host, port), serializer);
+            if(channel.isActive())
             {
                 channel.writeAndFlush(rpcRequest).addListener(future1 ->
                 {
-                    if (future1.isSuccess())log.info(String.format("客户端发送消息: %s", rpcRequest.toString()));
+                    if (future1.isSuccess()) log.info(String.format("客户端发送消息: %s", rpcRequest.toString()));
                     else log.error("发送消息时有错误发生: ", future1.cause());
                 });
                 channel.closeFuture().sync();
@@ -84,8 +77,9 @@ public class NettyRpcClient implements RpcClient
                 AttributeKey<RpcResponse> key = AttributeKey.valueOf("rpcResponse" + rpcRequest.getRequestId());
                 RpcResponse rpcResponse = channel.attr(key).get();
                 RpcMessageChecker.check(rpcRequest, rpcResponse);
-                return rpcResponse.getData();
+                result.set(rpcResponse.getData());
             }
+            else System.exit(0);
         }
         catch (Exception e)
         {
@@ -94,7 +88,8 @@ public class NettyRpcClient implements RpcClient
         finally
         {
             group.shutdownGracefully();
+            ChannelProvider.getGroup().shutdownGracefully();//理同group
         }
-        return null;
+        return result.get();
     }
 }
