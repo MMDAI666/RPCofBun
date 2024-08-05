@@ -21,7 +21,7 @@ public class NacosServiceDiscovery implements ServiceDiscovery
     {
         try
         {
-            List<Instance> instances =  NacosUtil.getAllInstance(namingService, serviceName);
+            List<Instance> instances =  NacosUtil.getAllInstance(serviceName);
             if(instances.isEmpty())throw new RuntimeException();
             return new InetSocketAddress(instances.get(0).getIp(),instances.get(0).getPort());
         } catch (RuntimeException | NacosException e)

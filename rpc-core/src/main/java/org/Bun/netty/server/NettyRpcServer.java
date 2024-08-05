@@ -11,6 +11,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.Bun.RpcServer;
 import org.Bun.enums.RpcError;
 import org.Bun.exception.RpcException;
+import org.Bun.hook.ShutdownHook;
 import org.Bun.netty.serializer.CommonSerializer;
 import org.Bun.netty.serializer.JsonSerializer;
 import org.Bun.netty.serializer.KryoSerializer;
@@ -93,6 +94,7 @@ public class NettyRpcServer implements RpcServer
                         }
                     });
             ChannelFuture future = serverBootstrap.bind(host,port).sync();//接着我们调用了 bootstrap 的 bind 方法将服务绑定到 port 端口上
+            ShutdownHook.getShutdownHook().addClearAllHook();//注册这个钩子,以便在JVM关闭时注销服务
             future.channel().closeFuture().sync();//应用程序将会阻塞等待直到服务器的 Channel 关闭。
         }
         catch(Exception e){

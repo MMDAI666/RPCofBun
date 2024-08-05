@@ -5,6 +5,7 @@ import org.Bun.RequestHandler;
 import org.Bun.RpcServer;
 import org.Bun.enums.RpcError;
 import org.Bun.exception.RpcException;
+import org.Bun.hook.ShutdownHook;
 import org.Bun.netty.serializer.CommonSerializer;
 import org.Bun.provider.ServiceProvider;
 import org.Bun.provider.ServiceProviderImpl;
@@ -62,9 +63,11 @@ public class SocketRpcServer implements RpcServer
     @Override
     public void start()
     {
-        try (ServerSocket serverSocket = new ServerSocket(port))
+        try (ServerSocket serverSocket = new ServerSocket())
         {
+            serverSocket.bind(new InetSocketAddress(host, port));
             log.info("服务器正在启动...");
+            ShutdownHook.getShutdownHook().addClearAllHook();//注册钩子
             Socket socket;
             while ((socket = serverSocket.accept()) != null)
             {

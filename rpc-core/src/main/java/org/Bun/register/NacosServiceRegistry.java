@@ -32,7 +32,7 @@ public class NacosServiceRegistry implements ServiceRegistry
     {
         try
         {
-            NacosUtil.registerService(namingService, serviceName, inetSocketAddress);
+            NacosUtil.registerService( serviceName, inetSocketAddress);
         }
         catch (NacosException e)
         {

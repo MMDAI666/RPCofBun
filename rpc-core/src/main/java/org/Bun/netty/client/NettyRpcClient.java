@@ -87,15 +87,12 @@ public class NettyRpcClient implements RpcClient
                 RpcMessageChecker.check(rpcRequest, rpcResponse);
                 result.set(rpcResponse.getData());
             }
-            else
-            {
-                channel.close();
-                System.exit(0);
-            }
+            else return null;
         }
         catch (Exception e)
         {
             log.error("发送消息时有错误发生: ", e);
+            Thread.currentThread().interrupt();
         }
         finally
         {
