@@ -26,19 +26,13 @@ public class ServiceProviderImpl implements ServiceProvider
     private static final Set<String> registeredService = ConcurrentHashMap.newKeySet();//使用线程安全的set
 
     @Override
-    public synchronized <T> void addServiceProvider(T service)
+    public synchronized <T> void addServiceProvider(T service, Class<T> serviceClass)
     {
-        String serviceName = service.getClass().getCanonicalName();
+        String serviceName = serviceClass.getCanonicalName();
         if(registeredService.contains(serviceName))return;
         registeredService.add(serviceName);
-        Class<?>[] interfaces = service.getClass().getInterfaces();
-        if(interfaces.length == 0){
-            throw new RpcException(RpcError.SERVICE_NOT_IMPLEMENT_ANY_INTERFACE);
-        }
-        for (Class<?> anInterface : interfaces) {
-            serviceMap.put(anInterface.getCanonicalName(), service);
-        }
-        log.info("向接口: {} 注册服务: {}", Arrays.toString(interfaces), serviceName);
+        serviceMap.put(serviceName, service);
+        log.info("向接口: {} 注册服务: {}", service.getClass().getInterfaces(), serviceName);
 
     }
 

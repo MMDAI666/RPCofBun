@@ -7,6 +7,7 @@ import com.alibaba.nacos.api.naming.pojo.Instance;
 import lombok.extern.slf4j.Slf4j;
 import org.Bun.enums.RpcError;
 import org.Bun.exception.RpcException;
+import org.Bun.utils.NacosUtil;
 
 import java.net.InetSocketAddress;
 import java.util.List;
@@ -19,15 +20,11 @@ import java.util.List;
 @Slf4j
 public class NacosServiceRegistry implements ServiceRegistry
 {
-    private static final String SERVER_ADDR = "127.0.0.1:8848";
-    private static final NamingService namingService;
-    static {
-        try {
-            namingService = NamingFactory.createNamingService(SERVER_ADDR);
-        } catch (NacosException e) {
-            log.error("连接到Nacos时有错误发生: ", e);
-            throw new RpcException(RpcError.FAILED_TO_CONNECT_TO_SERVICE_REGISTRY);
-        }
+    private final NamingService namingService;
+
+    public NacosServiceRegistry()
+    {
+        namingService= NacosUtil.getNacosNamingService();
     }
 
     @Override
@@ -35,7 +32,7 @@ public class NacosServiceRegistry implements ServiceRegistry
     {
         try
         {
-            namingService.registerInstance(serviceName,inetSocketAddress.getHostName(),inetSocketAddress.getPort());
+            NacosUtil.registerService(namingService, serviceName, inetSocketAddress);
         }
         catch (NacosException e)
         {
@@ -44,18 +41,4 @@ public class NacosServiceRegistry implements ServiceRegistry
         }
     }
 
-    @Override
-    public InetSocketAddress lookupService(String serviceName)
-    {
-        try
-        {
-            List<Instance> instances = namingService.getAllInstances(serviceName);
-            if(instances.isEmpty())throw new RuntimeException();
-            return new InetSocketAddress(instances.get(0).getIp(),instances.get(0).getPort());
-        } catch (RuntimeException | NacosException e)
-        {
-            log.error("获取服务时有错误发生:", e);
-            throw new RuntimeException(e);
-        }
-    }
 }

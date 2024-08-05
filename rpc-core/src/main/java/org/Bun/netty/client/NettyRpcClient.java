@@ -15,10 +15,13 @@ import org.Bun.exception.RpcException;
 import org.Bun.netty.serializer.CommonSerializer;
 import org.Bun.netty.serializer.JsonSerializer;
 import org.Bun.netty.serializer.KryoSerializer;
+import org.Bun.register.NacosServiceDiscovery;
 import org.Bun.register.NacosServiceRegistry;
+import org.Bun.register.ServiceDiscovery;
 import org.Bun.register.ServiceRegistry;
 import org.Bun.utils.CommonDecoder;
 import org.Bun.utils.CommonEncoder;
+import org.Bun.utils.NacosUtil;
 import org.Bun.utils.RpcMessageChecker;
 
 import java.net.InetSocketAddress;
@@ -27,7 +30,7 @@ import java.util.concurrent.atomic.AtomicReference;
 @Slf4j
 public class NettyRpcClient implements RpcClient
 {
-    private final ServiceRegistry serviceRegistry;
+    private final ServiceDiscovery serviceDiscovery;
 
     private CommonSerializer serializer;
     private static final Bootstrap bootstrap;
@@ -35,7 +38,7 @@ public class NettyRpcClient implements RpcClient
 
     public NettyRpcClient()
     {
-        serviceRegistry=new NacosServiceRegistry();
+        serviceDiscovery=new NacosServiceDiscovery();
     }
 
     @Override
@@ -67,7 +70,7 @@ public class NettyRpcClient implements RpcClient
         AtomicReference<Object> result = new AtomicReference<>(null);
         try
         {
-            InetSocketAddress inetSocketAddress = serviceRegistry.lookupService(rpcRequest.getInterfaceName());
+            InetSocketAddress inetSocketAddress = serviceDiscovery.lookupService(rpcRequest.getInterfaceName());
             Channel channel = ChannelProvider.get(inetSocketAddress, serializer);
             if(channel.isActive())
             {
@@ -84,7 +87,11 @@ public class NettyRpcClient implements RpcClient
                 RpcMessageChecker.check(rpcRequest, rpcResponse);
                 result.set(rpcResponse.getData());
             }
-            else System.exit(0);
+            else
+            {
+                channel.close();
+                System.exit(0);
+            }
         }
         catch (Exception e)
         {

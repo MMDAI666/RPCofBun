@@ -8,7 +8,9 @@ import org.Bun.enums.ResponseCode;
 import org.Bun.enums.RpcError;
 import org.Bun.exception.RpcException;
 import org.Bun.netty.serializer.CommonSerializer;
+import org.Bun.register.NacosServiceDiscovery;
 import org.Bun.register.NacosServiceRegistry;
+import org.Bun.register.ServiceDiscovery;
 import org.Bun.register.ServiceRegistry;
 import org.Bun.socket.ObjectReader;
 import org.Bun.socket.ObjectWriter;
@@ -27,12 +29,12 @@ import java.net.Socket;
 @Slf4j
 public class SocketRpcClient implements RpcClient
 {
-    private final ServiceRegistry serviceRegistry;
+    private final ServiceDiscovery serviceDiscovery;
     private CommonSerializer serializer;
 
     public SocketRpcClient()
     {
-        serviceRegistry=new NacosServiceRegistry();
+        serviceDiscovery=new NacosServiceDiscovery();
     }
     @Override
     public void setSerializer(CommonSerializer serializer) {
@@ -48,7 +50,7 @@ public class SocketRpcClient implements RpcClient
             log.error("未设置序列化器");
             throw new RpcException(RpcError.SERIALIZER_NOT_FOUND);
         }
-        InetSocketAddress inetSocketAddress = serviceRegistry.lookupService(rpcRequest.getInterfaceName());
+        InetSocketAddress inetSocketAddress = serviceDiscovery.lookupService(rpcRequest.getInterfaceName());
         try (Socket socket = new Socket())
         {
             socket.connect(inetSocketAddress);
