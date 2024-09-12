@@ -15,7 +15,7 @@ public class SocketTestServer
 
         HelloServer helloServer = new HelloServerImpl2();
         SocketRpcServer server = new SocketRpcServer("127.0.0.1", 9998);
-        server.setSerializer(new JsonSerializer());
+
         server.publishService(helloServer,HelloServer.class);
 
     }

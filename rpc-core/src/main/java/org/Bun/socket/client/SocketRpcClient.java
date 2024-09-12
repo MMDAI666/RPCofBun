@@ -7,6 +7,8 @@ import org.Bun.entity.RpcResponse;
 import org.Bun.enums.ResponseCode;
 import org.Bun.enums.RpcError;
 import org.Bun.exception.RpcException;
+import org.Bun.loadbalancer.LoadBalancer;
+import org.Bun.loadbalancer.RandomLoadBalancer;
 import org.Bun.netty.serializer.CommonSerializer;
 import org.Bun.register.NacosServiceDiscovery;
 import org.Bun.register.NacosServiceRegistry;
@@ -33,10 +35,13 @@ public class SocketRpcClient implements RpcClient
     private CommonSerializer serializer;
 
     public SocketRpcClient() {
-        this(DEFAULT_SERIALIZER);
+        this(DEFAULT_SERIALIZER, new RandomLoadBalancer());
     }
-    public SocketRpcClient(Integer serializer) {
-        this.serviceDiscovery = new NacosServiceDiscovery();
+    public SocketRpcClient(LoadBalancer loadBalancer) {
+        this(DEFAULT_SERIALIZER, loadBalancer);
+    }
+    public SocketRpcClient(Integer serializer, LoadBalancer loadBalancer) {
+        this.serviceDiscovery = new NacosServiceDiscovery(loadBalancer);
         this.serializer = CommonSerializer.getByCode(serializer);
     }
 

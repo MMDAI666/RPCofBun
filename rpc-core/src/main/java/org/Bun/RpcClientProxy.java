@@ -5,6 +5,7 @@ import org.Bun.entity.RpcRequest;
 import org.Bun.entity.RpcResponse;
 import org.Bun.netty.client.NettyRpcClient;
 import org.Bun.socket.client.SocketRpcClient;
+import org.Bun.utils.RpcMessageChecker;
 
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
@@ -35,24 +36,24 @@ public class RpcClientProxy implements InvocationHandler
         log.info("调用方法: {}#{}", method.getDeclaringClass().getName(), method.getName());
         RpcRequest rpcRequest = new RpcRequest(UUID.randomUUID().toString(),method.getDeclaringClass().getName(),
                 method.getName(), args, method.getParameterTypes(),false);
-        Object result = null;
+        RpcResponse rpcResponse = null;
         if(client instanceof NettyRpcClient)
         {
             CompletableFuture<RpcResponse> completableFuture  = (CompletableFuture<RpcResponse>) client.sendRequest(rpcRequest);
             try {
-                result = completableFuture.get().getData();
+                rpcResponse = completableFuture.get();
             } catch (InterruptedException | ExecutionException e) {
                 log.error("方法调用请求发送失败", e);
                 return null;
             }
         }
+
         if (client instanceof SocketRpcClient) {
-            RpcResponse rpcResponse = (RpcResponse) client.sendRequest(rpcRequest);
-            result = rpcResponse.getData();
+            rpcResponse = (RpcResponse) client.sendRequest(rpcRequest);
         }
 
-
-        return result;
+        RpcMessageChecker.check(rpcRequest, rpcResponse);
+        return  rpcResponse.getData();
 
     }
 

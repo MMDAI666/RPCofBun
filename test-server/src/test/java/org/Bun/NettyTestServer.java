@@ -13,7 +13,7 @@ public class NettyTestServer
     {
         HelloServer helloServer= new HelloServerImpl();
         NettyRpcServer server = new NettyRpcServer("127.0.0.1", 9999);
-        server.setSerializer(new JsonSerializer());
+
         server.publishService(helloServer,HelloServer.class);
     }
 }

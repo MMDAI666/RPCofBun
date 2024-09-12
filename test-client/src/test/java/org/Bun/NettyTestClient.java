@@ -10,11 +10,13 @@ public class NettyTestClient
     public static void main(String[] args)
     {
         RpcClient client = new NettyRpcClient();
-        client.setSerializer(new JsonSerializer());
+
         RpcClientProxy rpcClientProxy = new RpcClientProxy(client);
         HelloServer helloService = rpcClientProxy.getProxy(HelloServer.class);
         HelloObject object = new HelloObject(12, "This is a message");
-        String res = helloService.hello(object);
-        System.out.println(res);
+        for(int i = 0; i < 20; i ++) {
+            String res = helloService.hello(object);
+            System.out.println(i+":"+res);
+        }
     }
 }

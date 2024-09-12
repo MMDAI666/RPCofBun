@@ -43,16 +43,17 @@ public class NettyRpcServer implements RpcServer
     private CommonSerializer serializer;
 
     public NettyRpcServer(String host, int port) {
+        this(host, port, DEFAULT_SERIALIZER);
+    }
+
+    public NettyRpcServer(String host, int port, Integer serializer) {
         this.host = host;
         this.port = port;
         serviceRegistry = new NacosServiceRegistry();
         serviceProvider = new ServiceProviderImpl();
+        this.serializer = CommonSerializer.getByCode(serializer);
     }
-    @Override
-    public void setSerializer(CommonSerializer serializer)
-    {
-        this.serializer = serializer;
-    }
+
 
     @Override
     public <T> void publishService(T service, Class<T> serviceClass)

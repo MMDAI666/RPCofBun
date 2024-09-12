@@ -12,6 +12,8 @@ import org.Bun.entity.RpcRequest;
 import org.Bun.entity.RpcResponse;
 import org.Bun.enums.RpcError;
 import org.Bun.exception.RpcException;
+import org.Bun.loadbalancer.LoadBalancer;
+import org.Bun.loadbalancer.RandomLoadBalancer;
 import org.Bun.netty.serializer.CommonSerializer;
 import org.Bun.netty.serializer.JsonSerializer;
 import org.Bun.netty.serializer.KryoSerializer;
@@ -38,12 +40,19 @@ public class NettyRpcClient implements RpcClient
 
     public NettyRpcClient()
     {
-        this(DEFAULT_SERIALIZER);
+        this(DEFAULT_SERIALIZER, new RandomLoadBalancer());
+    }
+    public NettyRpcClient(LoadBalancer loadBalancer) {
+        this(DEFAULT_SERIALIZER, loadBalancer);
     }
 
     public NettyRpcClient(Integer serializer)
     {
-        this.serviceDiscovery = new NacosServiceDiscovery();
+        this(serializer, new RandomLoadBalancer());
+    }
+
+    public NettyRpcClient(Integer serializer, LoadBalancer loadBalancer) {
+        this.serviceDiscovery = new NacosServiceDiscovery(loadBalancer);
         this.serializer = CommonSerializer.getByCode(serializer);
         this.unprocessedRequests = SingletonFactory.getInstance(UnprocessedRequests.class);
     }
@@ -96,10 +105,6 @@ public class NettyRpcClient implements RpcClient
         {
             log.error("发送消息时有错误发生: ", e);
             Thread.currentThread().interrupt();
-        } finally
-        {
-            group.shutdownGracefully();
-            ChannelProvider.getGroup().shutdownGracefully();//理同group
         }
         return resultFuture;
     }
