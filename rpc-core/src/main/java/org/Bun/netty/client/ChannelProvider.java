@@ -15,8 +15,8 @@ import org.Bun.utils.CommonEncoder;
 
 import java.net.InetSocketAddress;
 import java.util.Date;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
+import java.util.Map;
+import java.util.concurrent.*;
 
 /**
  * 用于获取 Channel 对象
@@ -31,6 +31,8 @@ public class ChannelProvider
 
     private static final int MAX_RETRY_COUNT = 5;
     private static Channel channel = null;
+
+    private static Map<String, Channel> channels = new ConcurrentHashMap<>();
 
     public static EventLoopGroup getGroup()
     {
@@ -51,7 +53,16 @@ public class ChannelProvider
         return bootstrap;
     }
 
-    public static Channel get(InetSocketAddress inetSocketAddress, CommonSerializer serializer) {
+    public static Channel get(InetSocketAddress inetSocketAddress, CommonSerializer serializer) throws InterruptedException {
+        String key = inetSocketAddress.toString() + serializer.getCode();
+        if (channels.containsKey(key)) {
+            Channel channel = channels.get(key);
+            if(channels != null && channel.isActive()) {
+                return channel;
+            } else {
+                channels.remove(key);
+            }
+        }
         bootstrap.handler(new ChannelInitializer<SocketChannel>() {
             @Override
             protected void initChannel(SocketChannel ch) {
@@ -64,40 +75,30 @@ public class ChannelProvider
                         .addLast(new NettyClientHandler());
             }
         });
-        CountDownLatch countDownLatch = new CountDownLatch(1);//用于等待连接建立
+        Channel channel = null;
         try {
-            connect(bootstrap, inetSocketAddress, countDownLatch);
-            countDownLatch.await();
-        } catch (InterruptedException e) {
+            channel=connect(bootstrap, inetSocketAddress);
+        } catch (ExecutionException e) {
             log.error("获取channel时有错误发生:", e);
+            return null;
         }
+        channels.put(key, channel);
         return channel;
     }
 
-    private static void connect(Bootstrap bootstrap, InetSocketAddress inetSocketAddress, CountDownLatch countDownLatch) {
-        connect(bootstrap, inetSocketAddress, MAX_RETRY_COUNT, countDownLatch);
-    }
 
-    private static void connect(Bootstrap bootstrap, InetSocketAddress inetSocketAddress, int retry, CountDownLatch countDownLatch) {
-        bootstrap.connect(inetSocketAddress).addListener((ChannelFutureListener) future -> {
-            if (future.isSuccess()) {
+    private static Channel  connect(Bootstrap bootstrap, InetSocketAddress inetSocketAddress) throws ExecutionException, InterruptedException
+    {
+        CompletableFuture<Channel> completableFuture = new CompletableFuture<>();
+        bootstrap.connect(inetSocketAddress).addListener((ChannelFutureListener) future ->
+        {
+            if (future.isSuccess())
+            {
                 log.info("客户端连接成功!");
-                channel = future.channel();
-                countDownLatch.countDown();
-                return;
-            }
-            if (retry == 0) {
-                log.error("客户端连接失败:重试次数已用完，放弃连接！");
-                countDownLatch.countDown();
-                throw new RpcException(RpcError.CLIENT_CONNECT_SERVER_FAILURE);
-            }
-            // 第几次重连
-            int order = (MAX_RETRY_COUNT - retry) + 1;
-            // 本次重连的间隔
-            int delay = 1 << order;//计算重试的延迟时间，使用指数回退算法。
-            log.error("{}: 连接失败，第 {} 次重连……", new Date(), order);
-            bootstrap.config().group().schedule(() -> connect(bootstrap, inetSocketAddress, retry - 1, countDownLatch), delay, TimeUnit
-                    .SECONDS);//调度一个新的连接尝试，延迟时间为 delay 秒。
+                completableFuture.complete(future.channel());//如果尚未完成，则将get（）和相关方法返回的值设置为给定值。
+            } else throw new IllegalStateException();
+
         });
+        return completableFuture.get();
     }
 }

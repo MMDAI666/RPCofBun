@@ -5,7 +5,7 @@ import org.Bun.netty.serializer.CommonSerializer;
 
 public interface RpcClient
 {
-    void setSerializer(CommonSerializer serializer);
+    int DEFAULT_SERIALIZER = CommonSerializer.KRYO_SERIALIZER;
 
     Object sendRequest(RpcRequest rpcRequest);
 

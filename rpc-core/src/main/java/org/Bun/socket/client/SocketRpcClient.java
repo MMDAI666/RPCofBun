@@ -32,15 +32,13 @@ public class SocketRpcClient implements RpcClient
     private final ServiceDiscovery serviceDiscovery;
     private CommonSerializer serializer;
 
-    public SocketRpcClient()
-    {
-        serviceDiscovery=new NacosServiceDiscovery();
+    public SocketRpcClient() {
+        this(DEFAULT_SERIALIZER);
     }
-    @Override
-    public void setSerializer(CommonSerializer serializer) {
-        this.serializer = serializer;
+    public SocketRpcClient(Integer serializer) {
+        this.serviceDiscovery = new NacosServiceDiscovery();
+        this.serializer = CommonSerializer.getByCode(serializer);
     }
-
 
     @Override
     public Object sendRequest(RpcRequest rpcRequest)
@@ -67,7 +65,7 @@ public class SocketRpcClient implements RpcClient
                 throw new RpcException(RpcError.SERVICE_INVOCATION_FAILURE, "service:" + rpcRequest.getInterfaceName());
             }
             RpcMessageChecker.check(rpcRequest, rpcResponse);
-            return rpcResponse.getData();
+            return rpcResponse;
         } catch (IOException e)
         {
             log.error("调用时有错误发生：", e);

@@ -19,12 +19,10 @@ import org.Bun.register.NacosServiceDiscovery;
 import org.Bun.register.NacosServiceRegistry;
 import org.Bun.register.ServiceDiscovery;
 import org.Bun.register.ServiceRegistry;
-import org.Bun.utils.CommonDecoder;
-import org.Bun.utils.CommonEncoder;
-import org.Bun.utils.NacosUtil;
-import org.Bun.utils.RpcMessageChecker;
+import org.Bun.utils.*;
 
 import java.net.InetSocketAddress;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicReference;
 
 @Slf4j
@@ -36,69 +34,73 @@ public class NettyRpcClient implements RpcClient
     private static final Bootstrap bootstrap;
     private static final EventLoopGroup group;//这个引用必须保存,否则EventLoopGroup线程无法关闭,client无法结束
 
+    private final UnprocessedRequests unprocessedRequests;
+
     public NettyRpcClient()
     {
-        serviceDiscovery=new NacosServiceDiscovery();
+        this(DEFAULT_SERIALIZER);
     }
 
-    @Override
-    public void setSerializer(CommonSerializer serializer) {
-        this.serializer = serializer;
+    public NettyRpcClient(Integer serializer)
+    {
+        this.serviceDiscovery = new NacosServiceDiscovery();
+        this.serializer = CommonSerializer.getByCode(serializer);
+        this.unprocessedRequests = SingletonFactory.getInstance(UnprocessedRequests.class);
     }
 
     //在静态代码块中就直接配置好了 Netty 客户端，等待发送数据时启动，channel 将 RpcRequest 对象写出，并且等待服务端返回的结果。
     //注意这里的发送是非阻塞的，所以发送后会立刻返回，而无法得到结果。这里通过 AttributeKey 的方式阻塞获得返回结果：
-    static {
+    static
+    {
         bootstrap = new Bootstrap();
         group = new NioEventLoopGroup();
         bootstrap.group(group)
-                .channel(NioSocketChannel.class)
-                .option(ChannelOption.SO_KEEPALIVE, true);
+                .channel(NioSocketChannel.class);
 
     }
 
     @Override
-    public Object sendRequest(RpcRequest rpcRequest)
+    public CompletableFuture<RpcResponse> sendRequest(RpcRequest rpcRequest)
     {
-        if(serializer == null) {
+        if (serializer == null)
+        {
             log.error("未设置序列化器");
             throw new RpcException(RpcError.SERIALIZER_NOT_FOUND);
         }
         //AtomicReference 提供了一种线程安全的方式来更新和读取引用类型的变量，避免了使用传统的同步机制（如 synchronized 块）所带来的复杂性和性能开销。
         //Netty 的 ChannelFuture 和 AttributeKey 机制都是非阻塞的，这意味着在等待响应的过程中，可能会有多个线程同时访问和修改结果变量。
         // 使用 AtomicReference 可以确保这些操作是线程安全的，并且结果的更新是可见的。
-        AtomicReference<Object> result = new AtomicReference<>(null);
+        CompletableFuture<RpcResponse> resultFuture = new CompletableFuture<>();
         try
         {
             InetSocketAddress inetSocketAddress = serviceDiscovery.lookupService(rpcRequest.getInterfaceName());
             Channel channel = ChannelProvider.get(inetSocketAddress, serializer);
-            if(channel.isActive())
+            if (!channel.isActive())
             {
-                channel.writeAndFlush(rpcRequest).addListener(future1 ->
-                {
-                    if (future1.isSuccess()) log.info(String.format("客户端发送消息: %s", rpcRequest.toString()));
-                    else log.error("发送消息时有错误发生: ", future1.cause());
-                });
-                channel.closeFuture().sync();
-                //通过这种方式获得全局可见的返回结果，在获得返回结果 RpcResponse 后，将这个对象以 key 为 rpcResponse 放入 ChannelHandlerContext 中，
-                // 这里就可以立刻获得结果并返回，我们会在 NettyClientHandler 中看到放入的过程。
-                AttributeKey<RpcResponse> key = AttributeKey.valueOf("rpcResponse" + rpcRequest.getRequestId());
-                RpcResponse rpcResponse = channel.attr(key).get();
-                RpcMessageChecker.check(rpcRequest, rpcResponse);
-                result.set(rpcResponse.getData());
+                group.shutdownGracefully();
+                return null;
             }
-            else return null;
-        }
-        catch (Exception e)
+
+            unprocessedRequests.put(rpcRequest.getRequestId(), resultFuture);
+            channel.writeAndFlush(rpcRequest).addListener((ChannelFutureListener) future1 ->
+            {
+                if (future1.isSuccess()) log.info(String.format("客户端发送消息: %s", rpcRequest.toString()));
+                else
+                {
+                    future1.channel().close();
+                    resultFuture.completeExceptionally(future1.cause());
+                    log.error("发送消息时有错误发生: ", future1.cause());
+                }
+            } );
+        } catch (Exception e)
         {
             log.error("发送消息时有错误发生: ", e);
             Thread.currentThread().interrupt();
-        }
-        finally
+        } finally
         {
             group.shutdownGracefully();
             ChannelProvider.getGroup().shutdownGracefully();//理同group
         }
-        return result.get();
+        return resultFuture;
     }
 }

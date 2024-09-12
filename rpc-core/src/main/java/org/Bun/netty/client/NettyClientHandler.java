@@ -12,6 +12,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.Bun.entity.RpcRequest;
 import org.Bun.entity.RpcResponse;
 import org.Bun.netty.serializer.CommonSerializer;
+import org.Bun.utils.SingletonFactory;
+
 import java.net.InetSocketAddress;
 
 /**
@@ -23,15 +25,19 @@ import java.net.InetSocketAddress;
 @Slf4j
 public class NettyClientHandler extends SimpleChannelInboundHandler<RpcResponse>
 {
+    private final UnprocessedRequests unprocessedRequests;
+
+    public NettyClientHandler() {
+        this.unprocessedRequests = SingletonFactory.getInstance(UnprocessedRequests.class);
+    }
+
     @Override
     protected void channelRead0(ChannelHandlerContext channelHandlerContext, RpcResponse msg) throws Exception
     {
         try
         {
             log.info(String.format("客户端接收到消息: %s", msg));
-            AttributeKey<RpcResponse> key = AttributeKey.valueOf("rpcResponse" + msg.getRequestId());
-            channelHandlerContext.attr(key).set(msg);
-            channelHandlerContext.channel().close();
+            unprocessedRequests.complete(msg);
         }
         finally
         {

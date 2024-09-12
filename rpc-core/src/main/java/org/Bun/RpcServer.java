@@ -4,8 +4,7 @@ import org.Bun.netty.serializer.CommonSerializer;
 
 public interface RpcServer
 {
-    void setSerializer(CommonSerializer serializer);
-
+    int DEFAULT_SERIALIZER = CommonSerializer.KRYO_SERIALIZER;
     void start();
 
     <T> void publishService(T service, Class<T> serviceClass);
