@@ -5,6 +5,7 @@ import io.netty.channel.*;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
+import io.netty.handler.timeout.IdleStateHandler;
 import lombok.extern.slf4j.Slf4j;
 import org.Bun.enums.RpcError;
 import org.Bun.exception.RpcException;
@@ -57,6 +58,8 @@ public class ChannelProvider
                 /*自定义序列化编解码器*/
                 // RpcResponse -> ByteBuf
                 ch.pipeline().addLast(new CommonEncoder(serializer))
+                        //用于检测空闲状态。这里设置的是写空闲时间为5秒，即如果5秒内没有写操作，就会触发空闲事件。
+                        .addLast(new IdleStateHandler(0, 5, 0, TimeUnit.SECONDS))
                         .addLast(new CommonDecoder())
                         .addLast(new NettyClientHandler());
             }

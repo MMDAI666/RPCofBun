@@ -28,4 +28,5 @@ public class RpcRequest<T> implements Serializable
     private String methodName;
     private Object[] parameters;//参数列表
     private Class<?>[] parameterTypes;//参数类型
+    private Boolean heartBeat;
 }

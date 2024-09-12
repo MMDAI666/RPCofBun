@@ -7,6 +7,7 @@ import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.handler.logging.LogLevel;
 import io.netty.handler.logging.LoggingHandler;
+import io.netty.handler.timeout.IdleStateHandler;
 import lombok.extern.slf4j.Slf4j;
 import org.Bun.RpcServer;
 import org.Bun.enums.RpcError;
@@ -23,6 +24,7 @@ import org.Bun.utils.CommonDecoder;
 import org.Bun.utils.CommonEncoder;
 
 import java.net.InetSocketAddress;
+import java.util.concurrent.TimeUnit;
 
 
 /**
@@ -88,6 +90,8 @@ public class NettyRpcServer implements RpcServer
                         {
                             //数据从外部传入时需要解码，而传出时需要编码
                             ChannelPipeline pipeline = socketChannel.pipeline();
+                            //用于检测空闲状态。这里设置的是读空闲时间为30秒，即如果30秒内没有写操作，就会触发空闲事件。
+                            pipeline.addLast(new IdleStateHandler(30, 0, 0, TimeUnit.SECONDS));
                             pipeline.addLast(new CommonEncoder(serializer));
                             pipeline.addLast(new CommonDecoder());
                             pipeline.addLast(new NettyServerHandler());

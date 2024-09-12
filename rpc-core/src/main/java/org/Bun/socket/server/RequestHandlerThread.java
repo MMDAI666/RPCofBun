@@ -41,7 +41,7 @@ public class RequestHandlerThread implements Runnable
              OutputStream outputStream = socket.getOutputStream()) {
             RpcRequest rpcRequest = (RpcRequest) ObjectReader.readObject(inputStream);
             String interfaceName=rpcRequest.getInterfaceName();
-            Object result=requestHandler.handler(rpcRequest);
+            Object result=requestHandler.handle(rpcRequest);
             RpcResponse<Object> response = RpcResponse.success(result,rpcRequest.getRequestId());
             ObjectWriter.writeObject(outputStream, response, serializer);
 
