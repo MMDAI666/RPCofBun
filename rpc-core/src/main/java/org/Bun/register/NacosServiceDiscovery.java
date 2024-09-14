@@ -4,6 +4,7 @@ import com.alibaba.nacos.api.exception.NacosException;
 import com.alibaba.nacos.api.naming.NamingService;
 import com.alibaba.nacos.api.naming.pojo.Instance;
 import lombok.extern.slf4j.Slf4j;
+import org.Bun.entity.RpcRequest;
 import org.Bun.loadbalancer.LoadBalancer;
 import org.Bun.loadbalancer.RandomLoadBalancer;
 import org.Bun.utils.NacosUtil;
@@ -27,13 +28,13 @@ public class NacosServiceDiscovery implements ServiceDiscovery
     }
 
     @Override
-    public InetSocketAddress lookupService(String serviceName)
+    public InetSocketAddress lookupService(RpcRequest rpcRequest )
     {
         try
         {
-            List<Instance> instances =  NacosUtil.getAllInstance(serviceName);
+            List<Instance> instances =  NacosUtil.getAllInstance(rpcRequest.getInterfaceName());
             if(instances.isEmpty())throw new RuntimeException();
-            Instance  instance = loadBalancer.select(instances);
+            Instance  instance = loadBalancer.select(instances,rpcRequest);
             return new InetSocketAddress(instance.getIp(),instance.getPort());
         } catch (RuntimeException | NacosException e)
         {

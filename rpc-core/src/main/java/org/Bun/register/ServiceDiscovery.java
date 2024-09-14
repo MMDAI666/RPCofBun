@@ -1,5 +1,7 @@
 package org.Bun.register;
 
+import org.Bun.entity.RpcRequest;
+
 import java.net.InetSocketAddress;
 
 /**
@@ -10,9 +12,10 @@ import java.net.InetSocketAddress;
 public interface ServiceDiscovery
 {
     /**
-     * 根据服务名称获取服务实体
-     * @param serviceName 服务名称
+     * 根据请求获取服务实体
+     *
+     * @param rpcRequest 请求
      * @return 服务实体
      */
-    InetSocketAddress lookupService(String serviceName);
+    InetSocketAddress lookupService(RpcRequest rpcRequest);
 }

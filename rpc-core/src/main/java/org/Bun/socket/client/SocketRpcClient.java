@@ -53,7 +53,7 @@ public class SocketRpcClient implements RpcClient
             log.error("未设置序列化器");
             throw new RpcException(RpcError.SERIALIZER_NOT_FOUND);
         }
-        InetSocketAddress inetSocketAddress = serviceDiscovery.lookupService(rpcRequest.getInterfaceName());
+        InetSocketAddress inetSocketAddress = serviceDiscovery.lookupService(rpcRequest);
         try (Socket socket = new Socket())
         {
             socket.connect(inetSocketAddress);

@@ -1,6 +1,7 @@
 package org.Bun.loadbalancer;
 
 import com.alibaba.nacos.api.naming.pojo.Instance;
+import org.Bun.entity.RpcRequest;
 
 import java.util.List;
 import java.util.Random;
@@ -13,8 +14,9 @@ import java.util.Random;
 public class RandomLoadBalancer implements LoadBalancer
 {
     @Override
-    public Instance select(List<Instance> instances)
+    public Instance select(List<Instance> instances, RpcRequest rpcRequest)
     {
         return instances.get(new Random().nextInt(instances.size()));
     }
+
 }

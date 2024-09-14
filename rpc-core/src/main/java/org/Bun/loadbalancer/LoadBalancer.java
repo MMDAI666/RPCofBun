@@ -1,6 +1,7 @@
 package org.Bun.loadbalancer;
 
 import com.alibaba.nacos.api.naming.pojo.Instance;
+import org.Bun.entity.RpcRequest;
 
 import java.util.List;
 
@@ -11,6 +12,7 @@ import java.util.List;
  */
 public interface LoadBalancer {
 
-    Instance select(List<Instance> instances);
+
+    Instance select(List<Instance> instances, RpcRequest rpcRequest);
 
 }
