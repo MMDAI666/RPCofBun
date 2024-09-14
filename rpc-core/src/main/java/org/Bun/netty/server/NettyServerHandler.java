@@ -39,6 +39,7 @@ public class NettyServerHandler extends SimpleChannelInboundHandler<RpcRequest>
         //threadPool = ThreadPoolFactory.createDefaultThreadPool(THREAD_NAME_PREFIX);
     }
 
+    //todo 整合限流器
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, RpcRequest msg) throws Exception
     {

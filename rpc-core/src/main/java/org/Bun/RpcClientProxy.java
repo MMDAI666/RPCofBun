@@ -29,6 +29,7 @@ public class RpcClientProxy implements InvocationHandler
         return (T) Proxy.newProxyInstance(clazz.getClassLoader(), new Class<?>[]{clazz}, this);
     }
 
+    //todo 整合熔断器
     @Override
     @SuppressWarnings("unchecked")
     public Object invoke(Object proxy, Method method, Object[] args) throws Throwable

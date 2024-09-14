@@ -18,7 +18,6 @@ import java.util.concurrent.ConcurrentHashMap;
  * 基于一致性哈希算法的负载均衡器
  * @author 萌萌哒AI
  * @date 2024/09/14
- * todo
  */
 public class ConsistentHashLoadBalance implements LoadBalancer
 {
